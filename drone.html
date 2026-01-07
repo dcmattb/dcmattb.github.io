@@ -1,2 +1,1059 @@
-Test
-The token: ${{ secrets.TOKEN }}
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Flight Logger (Mobile)</title>
+  <style>
+  :root{
+    --bg:#0f1724;
+    --card:#0b1220;
+    --accent:#1e40af;
+    --muted:#94a3b8;
+    --text:#e6eef8;
+    --success:#10b981;
+  }
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;
+    background:linear-gradient(180deg,var(--bg),#071028);
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+    display:flex;
+    align-items:stretch;
+    justify-content:center;
+    padding:12px;
+    box-sizing:border-box;
+  }
+  .wrap{
+    width:100%;
+    max-width:760px;
+    display:flex;
+    flex-direction:column;
+    height: 100vh;
+  }
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+  }
+  h1{
+    font-size:1.05rem;
+    margin:0;
+    font-weight:600;
+    letter-spacing:0.2px;
+  }
+  .card{
+    background:var(--card);
+    border-radius:12px;
+    padding: 4px 0px;
+    box-shadow:0 6px 18px rgba(2,6,23,0.6);
+  }
+  #mapCard {
+    min-height: 0;
+    flex: 1;
+  }
+  #map {
+    height: 100%;
+    width: 100%;
+  }
+	#inflightCard {
+		display:none;
+	}
+  .time{
+    font-variant-numeric:tabular-nums;
+    font-size:1.05rem;
+    text-align:right;
+    color:var(--text);
+  }
+  .muted{color:var(--muted); font-size:0.88rem;}
+  label{display:block; font-size:0.85rem; margin-bottom:6px;}
+  select,input[type="text"]{
+    width:100%;
+    border-radius:8px;
+    border:1px solid rgba(255,255,255,0.04);
+    background:transparent;
+    color:var(--text);
+    font-size:0.98rem;
+    box-sizing:border-box;
+  }
+	button {cursor: pointer;}
+  .custom-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 34px;
+    padding: 0 10px;
+    background-color: transparent;
+    color: #d9534f;
+     border: 1px solid #d9534f;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.1s ease;
+  }
+  .custom-button:hover {
+        background-color: #d9534f;
+        color: white;
+    }
+    .custom-button:active {
+        transform: scale(0.9);
+    }
+    .add-variant {
+        color: #5cb85c;
+        border-color: #5cb85c;
+    }
+    .add-variant:hover {
+        background-color: #5cb85c;
+        color: white;
+    }
+    .row {
+  		display: grid;
+  		gap: 0 10px;
+  		grid-template-columns: 1fr 2fr 30px;
+      align-items: center;
+  	}
+  	.row > :nth-child(2) {
+  		justify-self: end;
+  		text-align: right;
+  		}
+  	.row label {
+  		left-align: left;
+  		font-weight: 600;
+  		white-space: nowrap;
+  	}
+    .row button {
+      width: 100%;
+    }
+  .big-btn{
+      display:block;
+      width:100%;
+      padding:8px;
+      border-radius:8px;
+      font-size:1.05rem;
+      font-weight:600;
+      text-align:center;
+      border:0;
+      background:linear-gradient(90deg,var(--accent),#2857d6);
+      color:white;
+      box-shadow:0 6px 18px rgba(34,64,154,0.35);
+      -webkit-tap-highlight-color: transparent;
+  }
+	.big-btn.disabled {
+	  background: linear-gradient(90deg, #64748b, #475569); /* muted gray-blue */
+	  cursor: not-allowed;
+	  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+	  opacity: 0.7;
+	}
+  .big-btn.finish{
+		background:linear-gradient(90deg,#ef4444,#f97316);
+	}
+	#preFlightBtn {
+	  background: linear-gradient(90deg, #f59e0b, #f97316); /* amber/orange */
+	  color: white;
+	  box-shadow: 0 6px 18px rgba(250,130,0,0.35);
+	}
+	#preFlightBtn.complete {
+	  background: linear-gradient(90deg, var(--success), #10b981); /* green gradient */
+	  box-shadow: 0 6px 18px rgba(16,185,129,0.35);
+	}
+	#runTimerDisplay {
+	  cursor: not-allowed;
+	}
+    .status{font-size:0.9rem; margin-top:8px;}
+    pre.json{
+      background:#021024;
+      padding:10px;
+      border-radius:8px;
+      overflow:auto;
+      max-height:36vh;
+      font-size:0.85rem;
+      color:#bfe0ff;
+    }
+    .meta-line {
+  		display:flex;
+  		justify-content:space-between;
+  		align-items: flex-start;
+  	}
+  	.meta-line > div {
+  		font-size: 0.82rem;
+  		color: var(--muted);
+  		max-height: 32px;
+  		overflow-y: auto;
+  		overflow-x: hidden;
+  		overflow-wrap: break-word;
+  	}
+  	.meta-line > :first-child {
+  		text-align: left;
+  		white-space: nowrap;
+      margin-right: 10px;
+  	}
+  	.meta-line > :last-child {
+  		text-align: right;
+  		margin-left: auto;
+  	}
+
+    .controls{display:flex; gap:8px; flex-wrap:wrap;}
+    .link-btn{
+      padding:8px 10px;
+      border-radius:8px;
+      border:0;
+      background:rgba(255,255,255,0.04);
+      color:var(--text);
+      font-size:0.9rem;
+    }
+    footer{font-size:0.78rem; color:var(--muted); text-align:center; padding:6px;}
+
+
+
+  	select, label {
+  	  padding: 0px;
+  	  margin: 8px 0px;
+  	  border-radius: 4px;
+  	  background: var(--bg);
+  	  color: var(--text);
+  	}
+
+  	.checklist {
+  	  list-style: none;
+  	  padding-left: 0;
+  	  margin-top: 10px;
+  	}
+
+  	.check-item {
+  	  padding: 8px 12px;
+  	  margin-bottom: 6px;
+  	  border-radius: 5px;
+  	  cursor: pointer;
+  	  transition: background 0.2s;
+  	}
+  	.check-item.active {
+  	  background: var(--success);
+  	}
+
+    .modal {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    .modal-content {
+      background: var(--card);
+      color: var(--text);
+      width: 80%;
+      border-radius: 8px;
+      padding: 1.5rem 2rem;
+      margin: auto;
+      position: relative;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+    }
+
+    .modal-logo {
+      max-width: 120px;
+      margin-bottom: 0.5rem;
+    }
+    /* Close X at top right */
+    .modal-close {
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      cursor: pointer;
+      font-weight: bold;
+      color: var(--text);
+    }
+    .modal-close:hover {
+      color: var(--success);
+    }
+  	/* Close button at bottom */
+  	.modal-close-btn {
+  	  margin-top: 15px;
+  	  width: 100%;
+  	  padding: 8px;
+  	  border: none;
+  	  border-radius: 4px;
+  	  background: rgba(255,255,255,0.08);
+  	  color: var(--text);
+  	  cursor: pointer;
+  	  font-weight: 500;
+  	}
+  	.modal-close-btn:hover {
+  	  background: rgba(255,255,255,0.15);
+  	}
+    .modal.hidden {
+      display: none;
+    }
+
+     @media(min-width:600px) {	/* Large screens */
+      h1{font-size:1.2rem}
+        .time{font-size:1.15rem}
+  	  #map {
+  	    height: 300px;
+  	  }
+  	  .big-btn {
+  	    padding:16px;
+  	  }
+  	  .card {
+  	    padding: 16px 12px;
+  	  }
+  	  #inputCard .row {
+  	    margin-bottom: 6px;
+  	  }
+      .modal-content {
+        max-width: 600px;
+      }
+    }
+    .info-icon {
+    width: 1em;
+      height: 1em;
+      vertical-align: middle;
+    }
+    .info-icon {
+      cursor: pointer;
+      user-select: none;
+    }
+  </style>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Flight Logger<span class="info-icon">
+        <svg xmlns="http://www.w3.org/2000/svg"
+             viewBox="0 0 100 100"
+             width="16"
+             height="16"
+             aria-label="Information icon">
+        	<circle cx="50" cy="50" r="46" fill="none" stroke="#fff" stroke-width="8" />
+        	<text x="48" y="79" text-anchor="middle" font-family="Times New Roman, Times, serif" font-size="86" font-style="italic" font-weight="700" fill="#fff">
+        	i
+          </text>
+        </svg>
+      </span>
+      </h1>
+      <div class="time" id="clock">—</div>
+    </header>
+    <div id="infoModal" class="modal hidden">
+      <div class="modal-content">
+        <img src="logo.png" alt=" logo" class="modal-logo">
+        <h2>Title</h2>
+
+        <p>
+          Reverse geocoding provided by
+          <strong>photon.komoot.io</strong>.
+        </p>
+        <p>
+          Weather data sourced from Open-Meteo.<br>
+          Visibility categorised using UK Met Office standards.
+        </p>
+      </div>
+    </div>
+    <div class="card" id="locCard">
+		<div class="meta-line">
+			<div>Location</div>
+			<div id="locStatus"></div>
+		</div>
+		<div class="meta-line">
+			<div>Weather</div>
+			<div id="weatherData"></div>
+		</div>
+		<div class="status" id="errMsg" style="color:#fca5a5"></div>
+	</div>
+	<div class="card" id="mapCard">
+  	<div id="coords" class="muted">Latitude / Longitude / Accuracy</div>
+  	<div id="map"></div>
+	</div>
+  <div class="card" id="inputCard"></div>
+	<div class="card" id="preflightCard">
+	  <button id="preFlightBtn" class="big-btn">Pre-Flight Checks</button>
+	  <button id="runTimerDisplay" class="big-btn" style="display:none;"></button>
+	</div>
+	<div class="card" id="inflightCard">
+	  <div style="margin-bottom:8px;"></div>
+	</div>
+  <div class="card">
+    <button id="startBtn" class="big-btn" aria-live="polite">Start</button>
+    <div class="status small" id="sessionInfo"></div>
+  </div>
+  <div class="card" id="outCard" style="display:none;">
+    <div class="muted">Record (JSON)</div>
+    <pre class="json" id="jsonOut">—</pre>
+    <div class="controls" style="margin-top:8px;">
+      <a id="downloadLink" class="link-btn" download="flight_record.json" href="#">Download JSON</a>
+      <button id="clearBtn" class="link-btn">Clear</button>
+    </div>
+  </div>
+  <footer>Geolocation and network access required for accurate weather and time.</footer>
+  </div>
+  <div id="preFlightModal" class="modal" style="display:none;">
+  	<div class="modal">
+  	  <div class="modal-content">
+  		<span id="modalClose" class="modal-close">&times;</span>
+  		<h2>Pre-Flight Checks</h2>
+  		<ul id="checklist" class="checklist"></ul>
+  		<button id="modalCloseBtn" class="modal-close-btn">Close</button>
+  	  </div>
+  	</div>
+  </div>
+
+<script>
+const savedData = JSON.parse(localStorage.getItem('flightFields')) || {};
+const fields = {
+    pilot: savedData.pilot || [],
+    drone: savedData.drone || ["DJI Neo", "DJI Air 3S", "DJI Avata 2", "DJI Mini 5 Pro", "DJI Mavic 4 Pro"],
+    controller: savedData.controller || ["None", "Mobile", "RC Motion 3 (Neo)", "RC2 (Mini 5 Pro)", "RC2 (Air3S)", "RC Motion 3 (Avata 2)", "RC520 (Mavic 4 Pro)"]
+};
+
+const preFlightChecks = [
+  "Local airspace regulations",
+  "Weather conditions",
+  "Operator ID & Visual Check",
+  "Battery levels",
+  "GPS fix >10 sats",
+  "Controller connection"
+];
+const dawnDuskChecks = [
+  "Green LEDs showing"
+];
+const nightChecks = [
+  "Green LEDs showing"
+];
+
+const keyLS = 'flightDraft';
+const historyLS = 'flightHistory';
+const keyDefaults = 'flightDefault';
+const startBtn = document.getElementById('startBtn');
+const clockEl = document.getElementById('clock');
+const locStatus = document.getElementById('locStatus');
+const coordsEl = document.getElementById('coords');
+const weatherDataEl = document.getElementById('weatherData');
+const errMsg = document.getElementById('errMsg');
+const pilotSel = document.getElementById('pilot');
+const droneSel = document.getElementById('drone');
+const pilotCustom = document.getElementById('pilotCustom');
+const droneCustom = document.getElementById('droneCustom');
+const sessionInfo = document.getElementById('sessionInfo');
+const outCard = document.getElementById('outCard');
+const jsonOut = document.getElementById('jsonOut');
+const downloadLink = document.getElementById('downloadLink');
+const clearBtn = document.getElementById('clearBtn');
+const preFlightBtn = document.getElementById('preFlightBtn');
+const runTimerEl = document.getElementById('runTimerDisplay');
+const inputCard = document.getElementById('inputCard');
+const preflightCard = document.getElementById('preflightCard');
+const inflightCard = document.getElementById('inflightCard');
+const modal = document.getElementById('preFlightModal');
+const modalClose = document.getElementById('modalClose');
+const modalCloseBtn = document.getElementById('modalCloseBtn');
+const checklistEl = document.getElementById('checklist');
+
+let coords = null;            // {lat, lon, accuracy}
+let weather = null;           // {wind_speed, wind_dir, precipitation, fetchedAt}
+let timeOffset = 0;           // ms to add to Date.now() to approximate server time
+let tickTimer = null;
+let checklistState = Array(preFlightChecks.length).fill(false);
+let flightActive = false;
+let flightStartTime = null;
+
+// Utility: convert wind degrees to cardinal
+function degToCard(deg){
+  const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  const idx = Math.round(((deg % 360) / 22.5)) % 16;
+  return dirs[idx];
+}
+
+// Format ISO with local timezone short
+function fmtLocalISO(ts){
+  const d = new Date(ts);
+  return d.toISOString(); // standard ISO; user systems may adjust as necessary
+}
+function formatElapsed(ms) {
+  let totalSec = Math.floor(ms / 1000);
+  const days = Math.floor(totalSec / 86400);
+  totalSec %= 86400;
+  const hours = Math.floor(totalSec / 3600);
+  totalSec %= 3600;
+  const minutes = Math.floor(totalSec / 60);
+  const seconds = totalSec % 60;
+  const hh = String(hours).padStart(2, '0');
+  const mm = String(minutes).padStart(2, '0');
+  const ss = String(seconds).padStart(2, '0');
+  if (days > 0) {
+    return `${days} day${days>1?'s':''} ${hh}:${mm}:${ss}`;
+  } else {
+    return `${hh}:${mm}:${ss}`;
+  }
+}
+
+// Time sync from WorldTimeAPI
+async function syncTime() {
+  try{
+    const res = await fetch('https://worldtimeapi.org/api/ip');
+    if(!res.ok) throw new Error('Time sync failed');
+    const j = await res.json();
+    // j.unixtime in seconds? worldtimeapi returns 'unixtime' seconds and 'datetime' ISO
+    if (j.unixtime){
+      const serverMs = j.unixtime * 1000;
+      timeOffset = serverMs - Date.now();
+      locStatus.textContent = locStatus.textContent; // keep unchanged
+      return true;
+    } else if (j.datetime){
+      const serverMs = Date.parse(j.datetime);
+      if(!isNaN(serverMs)){
+        timeOffset = serverMs - Date.now();
+        return true;
+      }
+    }
+  }catch(e){
+    console.warn('Time sync error', e);
+  }
+  // fallback: timeOffset remains 0
+  return false;
+}
+
+// Start the live clock using timeOffset
+function startClock(){
+  if (tickTimer) clearInterval(tickTimer);
+  function tick() {
+    const now = new Date(Date.now() + timeOffset);
+    const s = now.getFullYear() + '-' +
+      String(now.getMonth()+1).padStart(2,'0') + '-' +
+      String(now.getDate()).padStart(2,'0') + ' ' +
+      String(now.getHours()).padStart(2,'0') + ':' +
+      String(now.getMinutes()).padStart(2,'0') + ':' +
+      String(now.getSeconds()).padStart(2,'0');
+    clockEl.textContent = s;
+  	if (flightActive && flightStartTime) {
+  	  const elapsed = Date.now() - flightStartTime.getTime();
+      runTimerEl.textContent = formatElapsed(elapsed);
+  	}
+  }
+  tick();
+  tickTimer = setInterval(tick, 1000);
+}
+
+function requestLocation() {
+	map.locate({setView: true, maxZoom: 16});
+}
+async function onLocationFound(e) {
+	/* DRONE SVG ICON */
+	let droneSVG =
+	`<svg width="48" height="48" viewBox="0 0 48 48" fill="#333"
+	xmlns="http://www.w3.org/2000/svg">
+	<path d="M13 40c2.8 0 5-2.2 5-5s-2.2-5-5-5-5
+	2.2-5 5 2.2 5 5 5z"/>
+	<path d="M35 40c2.8 0 5-2.2 5-5s-2.2-5-5-5-5
+	2.2-5 5 2.2 5 5 5z"/>
+	<path d="M35 18c2.8 0 5-2.2 5-5s-2.2-5-5-5-5
+	2.2-5 5 2.2 5 5 5z"/>
+	<path d="M13 18c2.8 0 5-2.2 5-5s-2.2-5-5-5-5
+	2.2-5 5 2.2 5 5 5z"/>
+	<path d="M13 35l5.7-11.2L13 13l11 5.4L35 13l-5.7
+	10.8L35 35l-11-5.6L13 35z"/>
+	</svg>`;
+	let droneIcon = L.icon({
+		iconUrl:"data:image/svg+xml;base64,"+btoa(droneSVG),
+		iconSize:[48,48],
+		iconAnchor:[24,24]
+	});
+	const radius = e.accuracy / 2;
+	const locationMarker = L.marker(e.latlng,{icon: droneIcon}).addTo(map)
+		.bindPopup(`You are within ${radius} meters from this point`)//.openPopup();
+	const locationCircle = L.circle(e.latlng, radius).addTo(map);
+	coords = {
+        lat: e.latlng.lat,
+        lon: e.latlng.lng,
+        accuracy: e.accuracy
+    };
+	coordsEl.textContent = `${coords.lat.toFixed(6)} , ${coords.lon.toFixed(6)} (±${Math.round(coords.accuracy)} m)`;
+    let niceLoc = await reverseGeocode(coords.lat, coords.lon);
+    locStatus.textContent = niceLoc ? niceLoc : 'Location obtained';
+  //check FRZ here?
+	await fetchWeather();
+}
+function onLocationError(e) {
+	alert(e.message);
+}
+
+async function reverseGeocode(lat, lon){
+  const url = `https://photon.komoot.io/reverse?lat=${lat}&lon=${lon}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  if (!data.features?.length) return null;
+  const p = data.features[0].properties;
+  const road = p.street || p.name;
+  const city = p.city || p.town || p.village;
+  const pc   = p.postcode;
+  let parts = [];
+  if (road) parts.push(road);
+  if (city) parts.push(city);
+  if (pc)   parts.push(pc);
+  return parts.join(", ");
+}
+
+function archiveAndClearFlight(keyLS) {
+    const prev = localStorage.getItem(keyLS);
+    if (prev) {
+        try {
+            const rec = JSON.parse(prev);
+            // Load existing history list or start new
+            let history = [];
+            const histRaw = localStorage.getItem(historyLS);
+            if (histRaw) {
+                try {
+                    const parsed = JSON.parse(histRaw);
+                    if (Array.isArray(parsed)) history = parsed;
+                } catch {
+                    // ignore malformed history
+                }
+            }
+            // Append the record (no sorting)
+            history.push(rec);
+            // Save back
+            localStorage.setItem(historyLS, JSON.stringify(history));
+        } catch (e) {
+            console.warn('Failed to archive previous flight', e);
+        }
+    }
+    // Clear active record
+    localStorage.removeItem(keyLS);
+}
+function visibilityDescMetOffice(m) {
+  if (m == null) return null;
+  // UK Met Office visibility categories
+  if (m >= 40000)        return 'Excellent';
+  if (m >= 20000)        return 'Very Good';
+  if (m >= 10000)        return 'Good';
+  if (m >= 4000)         return 'Moderate';
+  if (m >= 1000)         return 'Poor';
+  return 'Very Poor';
+}
+function kmhToMph(kmh) {
+      return kmh != null ? +(kmh / 1.609344).toFixed(1) : null;
+}
+// Fetch weather from Open-Meteo
+async function fetchWeather(){
+  if(!coords) return;
+  weatherDataEl.textContent = 'Fetching weather…';
+  try {
+    // Request current weather and hourly precipitation for current hour, timezone auto
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lon}&current_weather=true&hourly=precipitation,visibility&daily=sunrise,sunset&timezone=auto`;
+    const r = await fetch(url);
+    const now = new Date(); //localtime, matches open-meto lookup auto timezone
+    if(!r.ok) throw new Error('Weather request failed');
+    const j = await r.json();
+    // current_weather: {temperature, windspeed, winddirection, weathercode, time}
+    const cw = j.current_weather || {};
+    let precip = null;
+    if(j.hourly && j.hourly.time && j.hourly.precipitation){
+      // find index of current hour
+      const nowHour = now.toISOString().slice(0,13); // YYYY-MM-DDTHH
+      // hourly times are like "2025-11-19T14:00"
+      let idx = j.hourly.time.findIndex(t => t.slice(0,13) === nowHour);
+      if(idx === -1) idx = 0;
+      precip = j.hourly.precipitation[idx];
+  	  //if (j.hourly.visibility)
+  	  vis = j.hourly.visibility[idx]; // in metres
+    }
+    const sunrise = new Date(j.daily.sunrise[0]);
+    const sunset = new Date(j.daily.sunset[0]);
+    const duskThreshold = 60 * 60 * 1000; //one hour
+    const pfbtn = document.getElementById('preFlightBtn');
+    if (dawnDuskChecks.length > 0 && (Math.abs(now - sunrise) <= duskThreshold || Math.abs(now - sunset) <= duskThreshold)) {      //Dawn or Dusk
+      if (!preFlightChecks.includes(dawnDuskChecks[0])) {
+        preFlightChecks.unshift(...dawnDuskChecks);
+        pfbtn.textContent = 'Pre-Flight Checks (Low Light)';
+      }
+    } else if (nightChecks.length >0 && (now < sunrise || now > sunset)) {      //Night
+      if (!preFlightChecks.includes(nightChecks[0])) {
+        preFlightChecks.unshift(...nightChecks);
+        pfbtn.textContent = 'Pre-Flight Checks (Night)';
+      }
+    } else {
+      pfbtn.textContent = 'Pre-Flight Checks';
+    }
+    checklistState = Array(preFlightChecks.length).fill(false);
+    buildChecks();
+    weather = {
+      wind_speed_kmh: cw.windspeed ?? null,
+	  wind_speed_mph: kmhToMph(cw.windspeed),
+      wind_dir_deg: cw.winddirection ?? null,
+      wind_dir_cardinal: cw.winddirection != null ? degToCard(cw.winddirection) : null,
+      precipitation_mm: precip ?? null,
+	  visibility_m: vis ?? null,
+      weather_time: cw.time ?? null,
+      fetchedAt: new Date(Date.now() + timeOffset).toISOString()
+    };
+    displayWeather();
+  } catch(e){
+    weatherDataEl.textContent = 'Weather unavailable';
+    console.warn('Weather fetch error', e);
+    errMsg.textContent = 'Unable to fetch weather — network or API error.';
+  }
+}
+function displayWeather(){
+  if(!weather){
+    weatherDataEl.textContent = 'No weather';
+    return;
+  }
+  const lines = [
+    `Wind: ${weather.wind_speed_mph}mph (${weather.wind_dir_cardinal})`,
+    `Pp: ${weather.precipitation_mm}mm`,
+	  `Vis: ${visibilityDescMetOffice(vis)}`,
+    `@ ${weather.weather_time}`
+  ];
+  weatherDataEl.textContent = lines.join(' · ');
+}
+function toggleCheckItem(el) {
+  const index = parseInt(el.dataset.index, 10);
+  el.classList.toggle('active');
+  const baseText = el.dataset.original || el.textContent.replace(' ✅', '');
+  el.dataset.original = baseText;
+  el.textContent = el.classList.contains('active') ? `${baseText} ✅` : baseText;
+  checklistState[index] = el.classList.contains('active');
+  updateStartButtonState();
+}
+function enableTouchDragSelection(container) {
+  let isTouching = false;
+  let lastToggled = null;
+  container.addEventListener('touchstart', e => {
+    isTouching = true;
+    lastToggled = null;
+  });
+  container.addEventListener('touchmove', e => {
+    if (!isTouching) return;
+    // Detect element under the finger
+    const touch = e.touches[0];
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (!el) return;
+    if (!el.classList.contains('check-item')) return;
+    if (el === lastToggled) return;        // prevent rapid re-toggle of same item
+    toggleCheckItem(el);
+    lastToggled = el;
+    e.preventDefault();
+  });
+  container.addEventListener('touchend', () => {
+    isTouching = false;
+    lastToggled = null;
+  });
+}
+function buildChecks() {
+  // Preflight checks
+  checklistEl.innerHTML = '';
+  preFlightChecks.forEach((check, index) => {
+    const li = document.createElement('li');
+    li.textContent = check;
+    li.className = 'check-item';
+    li.dataset.index = index;
+    li.addEventListener('click', () => toggleCheckItem(li));
+    checklistEl.appendChild(li);
+  });
+  enableTouchDragSelection(checklistEl);
+}
+
+function updateStartButtonState() {
+  const allChecked = checklistState.every(v => v === true);
+  if (allChecked) {	//If all checks passed - add checkmark to preflight button
+    if (!preFlightBtn.textContent.includes('✅')) {preFlightBtn.textContent += ' ✅'; }
+  	preFlightBtn.classList.add('complete');
+  } else {
+    preFlightBtn.textContent = preFlightBtn.textContent.replace(' ✅', '');
+  	preFlightBtn.classList.remove('complete');
+  }
+  const allSelects = Array.from(document.querySelectorAll('select'));
+  const isValid = allSelects.every(s => s.value && s.value !== "CUSTOM_TRIGGER");
+  if (allChecked && isValid) {
+    startBtn.disabled = false;
+    startBtn.classList.remove('disabled');
+  } else {
+    startBtn.disabled = true;
+    startBtn.classList.add('disabled');
+  }
+}
+
+async function startRun(){
+  // ensure we have a time sync attempt (best-effort)
+  await syncTime();
+  startClock();
+  if(!coords) {
+    map.locate({setView: true, maxZoom: 16}); //request Location
+    errMsg.textContent = 'Location not yet available — start will save with what is available.';
+  } else {
+    // try to refresh weather
+    await fetchWeather();
+  }
+  flightStartTime = new Date(Date.now() + timeOffset);
+  flightActive = true;
+  const startRec = {
+    start_time: flightStartTime.toISOString(),
+    location: coords ? { lat: coords.lat, lon: coords.lon, accuracy_m: coords.accuracy } : null,
+    weather,
+    note: ''
+  };
+  Object.keys(fields).forEach(key => {
+    const sel = document.getElementById(key);
+    const custom = document.getElementById(key + 'Custom');
+    const value = (sel.value === 'Custom…') ? custom.value.trim() : sel.value;
+    startRec[key] = value || null;
+  });
+  console.log(startRec)
+  try {
+    localStorage.setItem(keyLS, JSON.stringify(startRec));
+    sessionInfo.textContent = `Started at ${startRec.start_time}`;
+	  startBtn.textContent = 'Finish';
+    startBtn.classList.add('finish');
+	//startBtn.classList.remove('disabled');
+	//startBtn.disabled = false;
+    preFlightBtn.style.display = 'none';
+    runTimerEl.style.display = 'block';
+	  runTimerEl.textContent = '00:00:00';
+    outCard.style.display = 'none';
+    jsonOut.textContent = '—';
+    errMsg.textContent = '';
+  } catch(e){
+    errMsg.textContent = 'Unable to save start record to localStorage.';
+    console.error(e);
+  }
+}
+
+async function finishRun(){
+  const stored = localStorage.getItem(keyLS);
+  if(!stored){
+    errMsg.textContent = 'No running session found in localStorage.';
+    return;
+  }
+  const startRec = JSON.parse(stored);
+  const endTime = new Date(Date.now() + timeOffset).toISOString();
+  const elapsed = (Date.now() - flightStartTime.getTime())/1000;
+  if(coords) await fetchWeather();
+  //Create the flight record:
+  const record = {
+    start: startRec,
+    end_time: endTime,
+    end_weather: weather || null,
+    duration_seconds: Math.round(elapsed), //startRec && startRec.start_time ? Math.round((Date.parse(endTime) - Date.parse(startRec.start_time))/1000) : null,
+    exported_at: new Date(Date.now() + timeOffset).toISOString()
+  };
+  // show JSON and prepare download
+  const jtxt = JSON.stringify(record, null, 2);
+  downloadLink.href = URL.createObjectURL(new Blob([jtxt], {type:'application/json'}));
+  downloadLink.download = `flight_${(new Date(Date.parse(record.start.start_time))).toISOString().replace(/[:.]/g,'-')}.json`;
+
+  // reset UI and optionally clear localStorage
+  //localStorage.removeItem(keyLS);
+  archiveAndClearFlight(keyLS);
+  sessionInfo.textContent = `Finished at ${endTime} · Duration: ${elapsed} s`;
+  startBtn.textContent = 'Start';
+  startBtn.classList.remove('finish');
+  preFlightBtn.style.display = 'block';
+  runTimerEl.style.display = 'none';
+  outCard.style.display = 'block';
+  jsonOut.textContent = jtxt;
+  //Clear pre-flight checklist:
+  checklistState = Array(preFlightChecks.length).fill(false);
+  checklistEl.querySelectorAll('.check-item').forEach(item => {
+	item.classList.remove('active');
+	item.textContent = item.textContent.replace(' ✅', '');
+  });
+  updateStartButtonState();
+  flightActive = false;
+  flightStartTime = null;
+
+  errMsg.textContent = '';
+}
+function buildInputCard(containerId, defs) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  const savedSelections = JSON.parse(localStorage.getItem(keyDefaults)) || {};
+  const saveSelected = () => {
+    const selections = {};
+    document.querySelectorAll('select').forEach(sel => {
+        if (sel.value !== "CUSTOM_TRIGGER") {
+            selections[sel.id] = sel.value;
+        }
+    });
+    localStorage.setItem(keyDefaults, JSON.stringify(selections));
+  }
+  Object.entries(defs).forEach(([key, options]) => {
+    const row = document.createElement('div');
+    row.className = 'row';
+    const lbl = document.createElement('label');
+    lbl.setAttribute('for', key);
+    lbl.textContent = key.charAt(0).toUpperCase() + key.slice(1); //Capitalise
+    row.appendChild(lbl);
+    // select
+    const sel = document.createElement('select');
+    sel.id = key;
+    options.forEach(v => {
+      const o = document.createElement('option');
+      o.textContent = o.value = v;
+      if (savedSelections[key] === v) {o.selected = true;}
+      sel.appendChild(o);
+    });
+    //Add custom option and logic:
+    const customOpt = document.createElement('option');
+      customOpt.textContent = "➕ Add Custom...";
+      customOpt.value = "CUSTOM_TRIGGER";
+      sel.appendChild(customOpt);
+    const customInput = document.createElement('input');
+      customInput.style.gridColumn = '2';
+      customInput.type = 'text';
+      customInput.placeholder = `New ${key} name...`;
+      customInput.enterKeyHint = 'done';
+    const addBtn = document.createElement('button');
+      addBtn.style.gridColumn = '3';
+      addBtn.textContent = '+';
+      addBtn.className = 'custom-button add-variant';
+    const delBtn = document.createElement('button');
+      delBtn.innerHTML = '✕';
+      delBtn.className = 'custom-button';
+      delBtn.title = 'Delete selected item';
+    const updateUI = (shouldFocus = false) => {
+      const show = sel.value === "CUSTOM_TRIGGER";
+      customInput.style.display = show ? 'flex' : 'none';
+      addBtn.style.display = show ? 'flex' : 'none';
+      if (show && shouldFocus) {
+        requestAnimationFrame(() => customInput.focus()); //ensure the element is visible before focusing
+      }
+    };
+    if (options.length === 0) sel.value = "CUSTOM_TRIGGER";
+    sel.addEventListener('change', () => {
+      updateUI(true);
+      updateStartButtonState();
+      saveSelected();
+    });
+    updateUI(false);
+    const saveValue = () => {
+      const val = customInput.value.trim();
+      if (val && !fields[key].includes(val)) {
+          fields[key].push(val);
+          localStorage.setItem('flightFields', JSON.stringify(fields));
+          const newO = document.createElement('option');
+          newO.textContent = newO.value = val;
+          sel.insertBefore(newO, customOpt);
+          sel.value = val;
+          customInput.value = '';
+          customInput.style.display = 'none';
+          addBtn.style.display = 'none';
+      }
+    };
+    // Trigger on both Button Click AND Enter Key
+    addBtn.addEventListener('click', (e) => {
+      e.preventDefault(); // Prevent form submission
+      saveValue();
+      updateStartButtonState()
+    });
+    customInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        saveValue();
+        updateStartButtonState();
+      }
+    });
+    delBtn.onclick = (e) => {
+        e.preventDefault(); // Prevent accidental form submission
+        const val = sel.value;
+        // Don't delete the "Add Custom" trigger or empty selections
+        if (!val || val === "CUSTOM_TRIGGER") return;
+        fields[key] = fields[key].filter(item => item !== val);
+        localStorage.setItem('flightFields', JSON.stringify(fields));
+        sel.remove(sel.selectedIndex);
+        if (fields[key].length === 0) {
+            sel.value = "CUSTOM_TRIGGER";
+        }
+        updateUI(false);
+        updateStartButtonState()
+    };
+    row.appendChild(sel);
+    row.appendChild(delBtn);
+    row.appendChild(customInput);
+    row.appendChild(addBtn);
+    container.appendChild(row);
+  });
+}
+
+const map = L.map('map').fitWorld();
+const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+	maxZoom: 19,
+	attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+}).addTo(map);
+
+map.on('locationfound', onLocationFound);
+map.on('locationerror', onLocationError);
+
+buildChecks();
+buildInputCard('inputCard', fields);
+
+preFlightBtn.addEventListener('click', () => modal.style.display = 'block');
+modalClose.addEventListener('click', () => modal.style.display = 'none');
+modalCloseBtn.addEventListener('click', () => modal.style.display = 'none');
+window.addEventListener('click', e => { if(e.target === modal) modal.style.display='none'; });
+// Start / Finish button behaviour
+startBtn.addEventListener('click', async () => {
+  if(flightActive){
+    await finishRun();
+    return;
+  }
+  await startRun();
+});
+startBtn.disabled = true;
+startBtn.classList.add('disabled');
+
+
+// Clear output
+clearBtn.addEventListener('click', () => {
+  jsonOut.textContent = '—';
+  outCard.style.display = 'none';
+  downloadLink.href = '#';
+});
+
+// On load: attempt time sync, start clock, request location
+(async function init() { // Try time sync but do not block UI
+  await syncTime().catch(()=>{});
+  startClock();
+  map.locate({setView: true, maxZoom: 16}); //request Location
+  // If previous start exists, reflect state
+  const prev = localStorage.getItem(keyLS);
+  if(prev){
+    try{
+      const p = JSON.parse(prev);
+	  flightActive = true;
+	  flightStartTime = new Date(p.start_time);
+      //sessionInfo.textContent = `Resumed session started at ${p.start_time ?? p.start_time}`;
+      sessionInfo.textContent = `Resumed session started at ${p.start_time}`;
+	  const elapsed = Date.now() - flightStartTime.getTime();
+      runTimerEl.textContent = formatElapsed(elapsed);
+	  for (const key in p) {
+      console.log(key)
+	    if (!p.hasOwnProperty(key)) continue;
+	    const selectEl = document.getElementById(key);
+	    if (selectEl && selectEl.tagName === 'SELECT') {
+		  // check if saved value exists among options
+		  const options = Array.from(selectEl.options).map(opt => opt.value || opt.text);
+		  if (options.includes(p[key])) {
+		    selectEl.value = p[key];
+		  }
+    }
+	  }
+      startBtn.textContent = 'Finish';
+      startBtn.classList.add('finish');
+      startBtn.classList.remove('disabled');
+      startBtn.disabled = false;
+      preFlightBtn.style.display = 'none';
+      runTimerEl.style.display = 'block';
+      outCard.style.display = 'none';
+      jsonOut.textContent = '—';
+      errMsg.textContent = '';
+    }catch(e){ console.warn('Invalid previous session', e); }
+  } else {
+	  // no saved run data,
+  }
+})();
+</script>
+</body>
+</html>
