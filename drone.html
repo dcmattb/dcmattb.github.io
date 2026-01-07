@@ -4,320 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Flight Logger (Mobile)</title>
-  <style>
-  :root{
-    --bg:#0f1724;
-    --card:#0b1220;
-    --accent:#1e40af;
-    --muted:#94a3b8;
-    --text:#e6eef8;
-    --success:#10b981;
-  }
-  html,body{height:100%;}
-  body{
-    margin:0;
-    font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;
-    background:linear-gradient(180deg,var(--bg),#071028);
-    color:var(--text);
-    -webkit-font-smoothing:antialiased;
-    display:flex;
-    align-items:stretch;
-    justify-content:center;
-    padding:12px;
-    box-sizing:border-box;
-  }
-  .wrap{
-    width:100%;
-    max-width:760px;
-    display:flex;
-    flex-direction:column;
-    height: 100vh;
-  }
-  header{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    gap:8px;
-  }
-  h1{
-    font-size:1.05rem;
-    margin:0;
-    font-weight:600;
-    letter-spacing:0.2px;
-  }
-  .card{
-    background:var(--card);
-    border-radius:12px;
-    padding: 4px 0px;
-    box-shadow:0 6px 18px rgba(2,6,23,0.6);
-  }
-  #mapCard {
-    min-height: 0;
-    flex: 1;
-  }
-  #map {
-    height: 100%;
-    width: 100%;
-  }
-	#inflightCard {
-		display:none;
-	}
-  .time{
-    font-variant-numeric:tabular-nums;
-    font-size:1.05rem;
-    text-align:right;
-    color:var(--text);
-  }
-  .muted{color:var(--muted); font-size:0.88rem;}
-  label{display:block; font-size:0.85rem; margin-bottom:6px;}
-  select,input[type="text"]{
-    width:100%;
-    border-radius:8px;
-    border:1px solid rgba(255,255,255,0.04);
-    background:transparent;
-    color:var(--text);
-    font-size:0.98rem;
-    box-sizing:border-box;
-  }
-	button {cursor: pointer;}
-  .custom-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 34px;
-    padding: 0 10px;
-    background-color: transparent;
-    color: #d9534f;
-     border: 1px solid #d9534f;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.1s ease;
-  }
-  .custom-button:hover {
-        background-color: #d9534f;
-        color: white;
-    }
-    .custom-button:active {
-        transform: scale(0.9);
-    }
-    .add-variant {
-        color: #5cb85c;
-        border-color: #5cb85c;
-    }
-    .add-variant:hover {
-        background-color: #5cb85c;
-        color: white;
-    }
-    .row {
-  		display: grid;
-  		gap: 0 10px;
-  		grid-template-columns: 1fr 2fr 30px;
-      align-items: center;
-  	}
-  	.row > :nth-child(2) {
-  		justify-self: end;
-  		text-align: right;
-  		}
-  	.row label {
-  		left-align: left;
-  		font-weight: 600;
-  		white-space: nowrap;
-  	}
-    .row button {
-      width: 100%;
-    }
-  .big-btn{
-      display:block;
-      width:100%;
-      padding:8px;
-      border-radius:8px;
-      font-size:1.05rem;
-      font-weight:600;
-      text-align:center;
-      border:0;
-      background:linear-gradient(90deg,var(--accent),#2857d6);
-      color:white;
-      box-shadow:0 6px 18px rgba(34,64,154,0.35);
-      -webkit-tap-highlight-color: transparent;
-  }
-	.big-btn.disabled {
-	  background: linear-gradient(90deg, #64748b, #475569); /* muted gray-blue */
-	  cursor: not-allowed;
-	  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-	  opacity: 0.7;
-	}
-  .big-btn.finish{
-		background:linear-gradient(90deg,#ef4444,#f97316);
-	}
-	#preFlightBtn {
-	  background: linear-gradient(90deg, #f59e0b, #f97316); /* amber/orange */
-	  color: white;
-	  box-shadow: 0 6px 18px rgba(250,130,0,0.35);
-	}
-	#preFlightBtn.complete {
-	  background: linear-gradient(90deg, var(--success), #10b981); /* green gradient */
-	  box-shadow: 0 6px 18px rgba(16,185,129,0.35);
-	}
-	#runTimerDisplay {
-	  cursor: not-allowed;
-	}
-    .status{font-size:0.9rem; margin-top:8px;}
-    pre.json{
-      background:#021024;
-      padding:10px;
-      border-radius:8px;
-      overflow:auto;
-      max-height:36vh;
-      font-size:0.85rem;
-      color:#bfe0ff;
-    }
-    .meta-line {
-  		display:flex;
-  		justify-content:space-between;
-  		align-items: flex-start;
-  	}
-  	.meta-line > div {
-  		font-size: 0.82rem;
-  		color: var(--muted);
-  		max-height: 32px;
-  		overflow-y: auto;
-  		overflow-x: hidden;
-  		overflow-wrap: break-word;
-  	}
-  	.meta-line > :first-child {
-  		text-align: left;
-  		white-space: nowrap;
-      margin-right: 10px;
-  	}
-  	.meta-line > :last-child {
-  		text-align: right;
-  		margin-left: auto;
-  	}
-
-    .controls{display:flex; gap:8px; flex-wrap:wrap;}
-    .link-btn{
-      padding:8px 10px;
-      border-radius:8px;
-      border:0;
-      background:rgba(255,255,255,0.04);
-      color:var(--text);
-      font-size:0.9rem;
-    }
-    footer{font-size:0.78rem; color:var(--muted); text-align:center; padding:6px;}
-
-
-
-  	select, label {
-  	  padding: 0px;
-  	  margin: 8px 0px;
-  	  border-radius: 4px;
-  	  background: var(--bg);
-  	  color: var(--text);
-  	}
-
-  	.checklist {
-  	  list-style: none;
-  	  padding-left: 0;
-  	  margin-top: 10px;
-  	}
-
-  	.check-item {
-  	  padding: 8px 12px;
-  	  margin-bottom: 6px;
-  	  border-radius: 5px;
-  	  cursor: pointer;
-  	  transition: background 0.2s;
-  	}
-  	.check-item.active {
-  	  background: var(--success);
-  	}
-
-    .modal {
-      position: absolute;
-      inset: 0;
-      background: rgba(0,0,0,0.6);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-    }
-
-    .modal-content {
-      background: var(--card);
-      color: var(--text);
-      width: 80%;
-      border-radius: 8px;
-      padding: 1.5rem 2rem;
-      margin: auto;
-      position: relative;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.6);
-    }
-
-    .modal-logo {
-      max-width: 120px;
-      margin-bottom: 0.5rem;
-    }
-    /* Close X at top right */
-    .modal-close {
-      position: absolute;
-      top: 8px;
-      right: 12px;
-      cursor: pointer;
-      font-weight: bold;
-      color: var(--text);
-    }
-    .modal-close:hover {
-      color: var(--success);
-    }
-  	/* Close button at bottom */
-  	.modal-close-btn {
-  	  margin-top: 15px;
-  	  width: 100%;
-  	  padding: 8px;
-  	  border: none;
-  	  border-radius: 4px;
-  	  background: rgba(255,255,255,0.08);
-  	  color: var(--text);
-  	  cursor: pointer;
-  	  font-weight: 500;
-  	}
-  	.modal-close-btn:hover {
-  	  background: rgba(255,255,255,0.15);
-  	}
-    .modal.hidden {
-      display: none;
-    }
-
-     @media(min-width:600px) {	/* Large screens */
-      h1{font-size:1.2rem}
-        .time{font-size:1.15rem}
-  	  #map {
-  	    height: 300px;
-  	  }
-  	  .big-btn {
-  	    padding:16px;
-  	  }
-  	  .card {
-  	    padding: 16px 12px;
-  	  }
-  	  #inputCard .row {
-  	    margin-bottom: 6px;
-  	  }
-      .modal-content {
-        max-width: 600px;
-      }
-    }
-    .info-icon {
-    width: 1em;
-      height: 1em;
-      vertical-align: middle;
-    }
-    .info-icon {
-      cursor: pointer;
-      user-select: none;
-    }
-  </style>
+  <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 </head>
@@ -364,12 +51,16 @@
 			<div id="weatherData"></div>
 		</div>
 		<div class="status" id="errMsg" style="color:#fca5a5"></div>
+    <div id="coords" class="muted">Latitude / Longitude / Accuracy</div>
 	</div>
 	<div class="card" id="mapCard">
-  	<div id="coords" class="muted">Latitude / Longitude / Accuracy</div>
+
   	<div id="map"></div>
 	</div>
   <div class="card" id="inputCard"></div>
+  <div class="card" id="logBookCard">
+    <button id="logBookBtn" class="big-btn">Log Book</button>
+  </div>
 	<div class="card" id="preflightCard">
 	  <button id="preFlightBtn" class="big-btn">Pre-Flight Checks</button>
 	  <button id="runTimerDisplay" class="big-btn" style="display:none;"></button>
@@ -401,6 +92,11 @@
   	  </div>
   	</div>
   </div>
+  <div id="logBook" class="modal">
+    <h2>Log Book</h2>
+
+    <button id="logBookCloseBtn" class="modal-close-btn">Close</button>
+  </div>
 
 <script>
 const savedData = JSON.parse(localStorage.getItem('flightFields')) || {};
@@ -424,7 +120,6 @@ const dawnDuskChecks = [
 const nightChecks = [
   "Green LEDs showing"
 ];
-
 const keyLS = 'flightDraft';
 const historyLS = 'flightHistory';
 const keyDefaults = 'flightDefault';
@@ -451,6 +146,9 @@ const inflightCard = document.getElementById('inflightCard');
 const modal = document.getElementById('preFlightModal');
 const modalClose = document.getElementById('modalClose');
 const modalCloseBtn = document.getElementById('modalCloseBtn');
+const logBook = document.getElementById('logBook');
+const logBookBtn = document.getElementById('logBookBtn');
+const logBookCloseBtn = document.getElementById('logBookCloseBtn');
 const checklistEl = document.getElementById('checklist');
 
 let coords = null;            // {lat, lon, accuracy}
@@ -621,7 +319,6 @@ function archiveAndClearFlight(keyLS) {
             console.warn('Failed to archive previous flight', e);
         }
     }
-    // Clear active record
     localStorage.removeItem(keyLS);
 }
 function visibilityDescMetOffice(m) {
@@ -708,7 +405,9 @@ function displayWeather(){
 	  `Vis: ${visibilityDescMetOffice(vis)}`,
     `@ ${weather.weather_time}`
   ];
-  weatherDataEl.textContent = lines.join(' · ');
+  const wrappedLines = lines.map(part => `<span class="nobreak">${part}</span>`);
+  weatherDataEl.innerHTML = wrappedLines.join(' · ');
+  //weatherDataEl.innerHTML = lines.join(' · ') + ` <span class="nobreak">@ ${weather.weather_time}</span>`;
 }
 function toggleCheckItem(el) {
   const index = parseInt(el.dataset.index, 10);
@@ -777,19 +476,19 @@ function updateStartButtonState() {
   }
 }
 
-async function startRun(){
-  // ensure we have a time sync attempt (best-effort)
+async function startRun() {
+  const capturedMs = Date.now();  //capture start time before sync
+  flightActive = true;
+  updateActive();
   await syncTime();
   startClock();
+  flightStartTime = new Date(capturedMs + timeOffset); //ensure start time is accurate now we are sync'd
   if(!coords) {
     map.locate({setView: true, maxZoom: 16}); //request Location
     errMsg.textContent = 'Location not yet available — start will save with what is available.';
   } else {
-    // try to refresh weather
     await fetchWeather();
   }
-  flightStartTime = new Date(Date.now() + timeOffset);
-  flightActive = true;
   const startRec = {
     start_time: flightStartTime.toISOString(),
     location: coords ? { lat: coords.lat, lon: coords.lon, accuracy_m: coords.accuracy } : null,
@@ -806,16 +505,6 @@ async function startRun(){
   try {
     localStorage.setItem(keyLS, JSON.stringify(startRec));
     sessionInfo.textContent = `Started at ${startRec.start_time}`;
-	  startBtn.textContent = 'Finish';
-    startBtn.classList.add('finish');
-	//startBtn.classList.remove('disabled');
-	//startBtn.disabled = false;
-    preFlightBtn.style.display = 'none';
-    runTimerEl.style.display = 'block';
-	  runTimerEl.textContent = '00:00:00';
-    outCard.style.display = 'none';
-    jsonOut.textContent = '—';
-    errMsg.textContent = '';
   } catch(e){
     errMsg.textContent = 'Unable to save start record to localStorage.';
     console.error(e);
@@ -844,15 +533,8 @@ async function finishRun(){
   const jtxt = JSON.stringify(record, null, 2);
   downloadLink.href = URL.createObjectURL(new Blob([jtxt], {type:'application/json'}));
   downloadLink.download = `flight_${(new Date(Date.parse(record.start.start_time))).toISOString().replace(/[:.]/g,'-')}.json`;
-
-  // reset UI and optionally clear localStorage
-  //localStorage.removeItem(keyLS);
   archiveAndClearFlight(keyLS);
   sessionInfo.textContent = `Finished at ${endTime} · Duration: ${elapsed} s`;
-  startBtn.textContent = 'Start';
-  startBtn.classList.remove('finish');
-  preFlightBtn.style.display = 'block';
-  runTimerEl.style.display = 'none';
   outCard.style.display = 'block';
   jsonOut.textContent = jtxt;
   //Clear pre-flight checklist:
@@ -863,10 +545,36 @@ async function finishRun(){
   });
   updateStartButtonState();
   flightActive = false;
+  updateActive();
   flightStartTime = null;
-
   errMsg.textContent = '';
 }
+function updateActive() {
+  if (flightActive) {
+    startBtn.textContent = 'Finish';
+    startBtn.classList.add('finish');
+    startBtn.classList.remove('disabled');
+    startBtn.disabled = false;
+    preFlightBtn.style.display = 'none';
+    runTimerEl.style.display = 'block';
+    runTimerEl.textContent = '00:00:00';
+    outCard.style.display = 'none';
+    jsonOut.textContent = '—';
+    errMsg.textContent = '';
+    const elems = document.querySelectorAll('#inputCard select, #inputCard button');
+    elems.forEach(el => el.disabled = true);
+  } else {
+    startBtn.textContent = 'Start';
+    startBtn.classList.remove('finish');
+    startBtn.classList.add('disabled');
+    startBtn.disabled = true;
+    preFlightBtn.style.display = 'block';
+    runTimerEl.style.display = 'none';
+    const elems = document.querySelectorAll('#inputCard select, #inputCard button');
+    elems.forEach(el => el.disabled = false);
+  }
+}
+
 function buildInputCard(containerId, defs) {
   const container = document.getElementById(containerId);
   container.innerHTML = '';
@@ -884,6 +592,7 @@ function buildInputCard(containerId, defs) {
     const row = document.createElement('div');
     row.className = 'row';
     const lbl = document.createElement('label');
+    lbl.className = 'nobreak';
     lbl.setAttribute('for', key);
     lbl.textContent = key.charAt(0).toUpperCase() + key.slice(1); //Capitalise
     row.appendChild(lbl);
@@ -1001,9 +710,6 @@ startBtn.addEventListener('click', async () => {
   }
   await startRun();
 });
-startBtn.disabled = true;
-startBtn.classList.add('disabled');
-
 
 // Clear output
 clearBtn.addEventListener('click', () => {
@@ -1011,48 +717,46 @@ clearBtn.addEventListener('click', () => {
   outCard.style.display = 'none';
   downloadLink.href = '#';
 });
+logBookBtn.addEventListener('click', () => {
+  logBook.style.display = 'block';
+});
+logBookCloseBtn.addEventListener('click', () => {
+  logBook.style.display = 'none';
+});
 
 // On load: attempt time sync, start clock, request location
 (async function init() { // Try time sync but do not block UI
-  await syncTime().catch(()=>{});
-  startClock();
-  map.locate({setView: true, maxZoom: 16}); //request Location
   // If previous start exists, reflect state
   const prev = localStorage.getItem(keyLS);
-  if(prev){
-    try{
+  if(prev) {
+    try {
       const p = JSON.parse(prev);
-	  flightActive = true;
-	  flightStartTime = new Date(p.start_time);
-      //sessionInfo.textContent = `Resumed session started at ${p.start_time ?? p.start_time}`;
+  	  flightActive = true;
+  	  flightStartTime = new Date(p.start_time);
       sessionInfo.textContent = `Resumed session started at ${p.start_time}`;
-	  const elapsed = Date.now() - flightStartTime.getTime();
+  	  const elapsed = Date.now() - flightStartTime.getTime();
       runTimerEl.textContent = formatElapsed(elapsed);
-	  for (const key in p) {
-      console.log(key)
-	    if (!p.hasOwnProperty(key)) continue;
-	    const selectEl = document.getElementById(key);
-	    if (selectEl && selectEl.tagName === 'SELECT') {
-		  // check if saved value exists among options
-		  const options = Array.from(selectEl.options).map(opt => opt.value || opt.text);
-		  if (options.includes(p[key])) {
-		    selectEl.value = p[key];
-		  }
-    }
-	  }
-      startBtn.textContent = 'Finish';
-      startBtn.classList.add('finish');
-      startBtn.classList.remove('disabled');
-      startBtn.disabled = false;
-      preFlightBtn.style.display = 'none';
-      runTimerEl.style.display = 'block';
-      outCard.style.display = 'none';
-      jsonOut.textContent = '—';
-      errMsg.textContent = '';
-    }catch(e){ console.warn('Invalid previous session', e); }
+  	  for (const key in p) {
+        console.log(key)
+  	    if (!p.hasOwnProperty(key)) continue;
+  	    const selectEl = document.getElementById(key);
+  	    if (selectEl && selectEl.tagName === 'SELECT') {
+    		  // check if saved value exists among options
+    		  const options = Array.from(selectEl.options).map(opt => opt.value || opt.text);
+    		  if (options.includes(p[key])) {
+    		    selectEl.value = p[key];
+    		  }
+        }
+  	  }
+
+    } catch(e) { console.warn('Invalid previous session', e); }
   } else {
 	  // no saved run data,
   }
+  updateActive()
+  await syncTime().catch(()=>{});
+  startClock();
+  map.locate({setView: true, maxZoom: 16}); //request Location
 })();
 </script>
 </body>
