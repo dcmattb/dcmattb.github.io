@@ -11,7 +11,7 @@
 <body>
   <div class="wrap">
     <header>
-      <h1>Flight Logger<span class="info-icon">
+      <h1>Flight Logger<span id="infoBtn" class="info-icon">
         <svg xmlns="http://www.w3.org/2000/svg"
              viewBox="0 0 100 100"
              width="16"
@@ -26,21 +26,6 @@
       </h1>
       <div class="time" id="clock">—</div>
     </header>
-    <div id="infoModal" class="modal hidden">
-      <div class="modal-content">
-        <img src="logo.png" alt=" logo" class="modal-logo">
-        <h2>Title</h2>
-
-        <p>
-          Reverse geocoding provided by
-          <strong>photon.komoot.io</strong>.
-        </p>
-        <p>
-          Weather data sourced from Open-Meteo.<br>
-          Visibility categorised using UK Met Office standards.
-        </p>
-      </div>
-    </div>
     <div class="card" id="locCard">
 		<div class="meta-line">
 			<div>Location</div>
@@ -54,7 +39,6 @@
     <div id="coords" class="muted">Latitude / Longitude / Accuracy</div>
 	</div>
 	<div class="card" id="mapCard">
-
   	<div id="map"></div>
 	</div>
   <div class="card" id="inputCard"></div>
@@ -82,30 +66,62 @@
   </div>
   <footer>Geolocation and network access required for accurate weather and time.</footer>
   </div>
-  <div id="preFlightModal" class="modal" style="display:none;">
-  	<div class="modal">
-  	  <div class="modal-content">
+  <!-- Modals: -->
+  <div id="preFlightModal" class="modal hidden">
+	  <div class="modal-content">
   		<span id="modalClose" class="modal-close">&times;</span>
   		<h2>Pre-Flight Checks</h2>
   		<ul id="checklist" class="checklist"></ul>
   		<button id="modalCloseBtn" class="modal-close-btn">Close</button>
-  	  </div>
-  	</div>
+	  </div>
   </div>
-  <div id="logBook" class="modal">
-    <h2>Log Book</h2>
-
-    <button id="logBookCloseBtn" class="modal-close-btn">Close</button>
+  <div id="logBook" class="modal hidden">
+    <div class="modal-content">
+      <h2>Log Book</h2>
+      <div id="logBookEntries" class="flight-grid"></div>
+      <button id="logBookDownloadBtn" class="big-btn">Download</button>
+      <button id="logBookCloseBtn" class="modal-close-btn">Close</button>
+    </div>
   </div>
-
+  <div id="editFlight" class="modal hidden">
+    <h2>Flight</h2>
+    <div id="flightDetails" class="flight-grid"></div>
+    <button id="flightCloseBtn" class="modal-close-btn">Save</button>
+  </div>
+  <div id="infoModal" class="modal hidden">
+    <div class="modal-content">
+      <img src="logo.png" alt=" logo" class="modal-logo">
+      <h2>Drone Flight Logger</h2>
+      <p>
+        By Matt
+      </p>
+      <p>
+        Mapping by <strong>Leaflet</strong>
+      </p>
+      <p>
+        Reverse geocoding by <strong>photon.komoot.io</strong>.
+      </p>
+      <p>
+        Weather data sourced from <strong>Open-Meteo</strong><br>
+        Visibility categorised using Met Office standards.
+      </p>
+      <p>Version <span id="progversion"></span>.<span id="logversion"></span> | Copyright © 2026</p>
+      <button id="infoCloseBtn" class="modal-close-btn">Close</button>
+    </div>
+  </div>
 <script>
-const savedData = JSON.parse(localStorage.getItem('flightFields')) || {};
+const progVersion = 1;
+const logVersion = 1;
+const keyLS = 'flightDraft';
+const historyLS = 'flightHistory';
+const keyDefaults = 'flightDefault';
+const keyFields = 'flightFields';
+const savedData = JSON.parse(localStorage.getItem(keyFields)) || {};
 const fields = {
     pilot: savedData.pilot || [],
     drone: savedData.drone || ["DJI Neo", "DJI Air 3S", "DJI Avata 2", "DJI Mini 5 Pro", "DJI Mavic 4 Pro"],
     controller: savedData.controller || ["None", "Mobile", "RC Motion 3 (Neo)", "RC2 (Mini 5 Pro)", "RC2 (Air3S)", "RC Motion 3 (Avata 2)", "RC520 (Mavic 4 Pro)"]
 };
-
 const preFlightChecks = [
   "Local airspace regulations",
   "Weather conditions",
@@ -120,9 +136,8 @@ const dawnDuskChecks = [
 const nightChecks = [
   "Green LEDs showing"
 ];
-const keyLS = 'flightDraft';
-const historyLS = 'flightHistory';
-const keyDefaults = 'flightDefault';
+
+
 const startBtn = document.getElementById('startBtn');
 const clockEl = document.getElementById('clock');
 const locStatus = document.getElementById('locStatus');
@@ -143,11 +158,15 @@ const runTimerEl = document.getElementById('runTimerDisplay');
 const inputCard = document.getElementById('inputCard');
 const preflightCard = document.getElementById('preflightCard');
 const inflightCard = document.getElementById('inflightCard');
+const info = document.getElementById('infoModal');
+const infoBtn = document.getElementById('infoBtn');
 const modal = document.getElementById('preFlightModal');
 const modalClose = document.getElementById('modalClose');
 const modalCloseBtn = document.getElementById('modalCloseBtn');
 const logBook = document.getElementById('logBook');
 const logBookBtn = document.getElementById('logBookBtn');
+const logBookEntries = document.getElementById('logBookEntries');
+const logBookDlBtn = document.getElementById('logBookDownloadBtn');
 const logBookCloseBtn = document.getElementById('logBookCloseBtn');
 const checklistEl = document.getElementById('checklist');
 
@@ -158,6 +177,8 @@ let tickTimer = null;
 let checklistState = Array(preFlightChecks.length).fill(false);
 let flightActive = false;
 let flightStartTime = null;
+let flightHistory = JSON.parse(localStorage.getItem(historyLS)) || [];
+let distanceUnits = 'm';
 
 // Utility: convert wind degrees to cardinal
 function degToCard(deg){
@@ -188,6 +209,21 @@ function formatElapsed(ms) {
     return `${hh}:${mm}:${ss}`;
   }
 }
+function timeAgo(isoStr) {
+  const then = new Date(isoStr);
+  const now = new Date();
+  const diffMs = now - then;
+  if (diffMs < 0) return 'just now';
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return 'Just now';
+  if (diffMin === 1) return '1 min ago';
+  if (diffMin < 60) return `${diffMin} mins ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr === 1) return '1 hour ago';
+  if (diffHr < 24) return `${diffHr} hours ago`;
+  return 'ages ago';
+}
+
 
 // Time sync from WorldTimeAPI
 async function syncTime() {
@@ -199,7 +235,6 @@ async function syncTime() {
     if (j.unixtime){
       const serverMs = j.unixtime * 1000;
       timeOffset = serverMs - Date.now();
-      locStatus.textContent = locStatus.textContent; // keep unchanged
       return true;
     } else if (j.datetime){
       const serverMs = Date.parse(j.datetime);
@@ -231,6 +266,7 @@ function startClock(){
   	  const elapsed = Date.now() - flightStartTime.getTime();
       runTimerEl.textContent = formatElapsed(elapsed);
   	}
+    updateWeatherTimeAgo();
   }
   tick();
   tickTimer = setInterval(tick, 1000);
@@ -264,14 +300,15 @@ async function onLocationFound(e) {
 	const locationMarker = L.marker(e.latlng,{icon: droneIcon}).addTo(map)
 		.bindPopup(`You are within ${radius} meters from this point`)//.openPopup();
 	const locationCircle = L.circle(e.latlng, radius).addTo(map);
+  let niceLoc = await reverseGeocode(e.latlng.lat, e.latlng.lng);
 	coords = {
-        lat: e.latlng.lat,
-        lon: e.latlng.lng,
-        accuracy: e.accuracy
+        lat: e.latlng.lat.toFixed(6),
+        lon: e.latlng.lng.toFixed(6),
+        accuracy: e.accuracy,
+        loc: niceLoc ? niceLoc : null
     };
-	coordsEl.textContent = `${coords.lat.toFixed(6)} , ${coords.lon.toFixed(6)} (±${Math.round(coords.accuracy)} m)`;
-    let niceLoc = await reverseGeocode(coords.lat, coords.lon);
-    locStatus.textContent = niceLoc ? niceLoc : 'Location obtained';
+	coordsEl.textContent = `${coords.lat} , ${coords.lon} (±${Math.round(coords.accuracy)} m)`;
+  locStatus.textContent = coords.loc; //niceLoc ? niceLoc : 'Location obtained';
   //check FRZ here?
 	await fetchWeather();
 }
@@ -294,33 +331,33 @@ async function reverseGeocode(lat, lon){
   if (pc)   parts.push(pc);
   return parts.join(", ");
 }
+/*
+async function reverseGeocode(lat, lon){
+  const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`;
+  const res = await fetch(url, {
+    headers: { "User-Agent": "YourAppName/1.0 (contact@example.com)" }
+  });
+  if(!res.ok) return null;
+  const data = await res.json();
+  //return data.display_name || null;
 
-function archiveAndClearFlight(keyLS) {
-    const prev = localStorage.getItem(keyLS);
-    if (prev) {
-        try {
-            const rec = JSON.parse(prev);
-            // Load existing history list or start new
-            let history = [];
-            const histRaw = localStorage.getItem(historyLS);
-            if (histRaw) {
-                try {
-                    const parsed = JSON.parse(histRaw);
-                    if (Array.isArray(parsed)) history = parsed;
-                } catch {
-                    // ignore malformed history
-                }
-            }
-            // Append the record (no sorting)
-            history.push(rec);
-            // Save back
-            localStorage.setItem(historyLS, JSON.stringify(history));
-        } catch (e) {
-            console.warn('Failed to archive previous flight', e);
-        }
-    }
-    localStorage.removeItem(keyLS);
-}
+  if(!data.address) return null;
+  const a = data.address;
+  // Choose the most sensible components
+  const road   = a.road || a.pedestrian || a.path || a.cycleway || a.footway;
+  const local  = a.city || a.town || a.village || a.hamlet || a.suburb || a.neighbourhood;
+  const county = a.county;
+  const pc     = a.postcode;
+  // Build a readable string without country
+  let parts = [];
+  if(road) parts.push(road);
+  if(local) parts.push(local);
+  else if(county) parts.push(county);
+  if(pc) parts.push(pc);
+  return parts.join(", ") || null;
+}*/
+
+
 function visibilityDescMetOffice(m) {
   if (m == null) return null;
   // UK Met Office visibility categories
@@ -361,29 +398,35 @@ async function fetchWeather(){
     const sunrise = new Date(j.daily.sunrise[0]);
     const sunset = new Date(j.daily.sunset[0]);
     const duskThreshold = 60 * 60 * 1000; //one hour
+    let light_level = "";
     const pfbtn = document.getElementById('preFlightBtn');
     if (dawnDuskChecks.length > 0 && (Math.abs(now - sunrise) <= duskThreshold || Math.abs(now - sunset) <= duskThreshold)) {      //Dawn or Dusk
+      light_level = "Low Light"
       if (!preFlightChecks.includes(dawnDuskChecks[0])) {
         preFlightChecks.unshift(...dawnDuskChecks);
         pfbtn.textContent = 'Pre-Flight Checks (Low Light)';
       }
     } else if (nightChecks.length >0 && (now < sunrise || now > sunset)) {      //Night
+      light_level = "Night"
       if (!preFlightChecks.includes(nightChecks[0])) {
         preFlightChecks.unshift(...nightChecks);
         pfbtn.textContent = 'Pre-Flight Checks (Night)';
       }
     } else {
+      light_level = "Daylight"
       pfbtn.textContent = 'Pre-Flight Checks';
     }
     checklistState = Array(preFlightChecks.length).fill(false);
     buildChecks();
     weather = {
       wind_speed_kmh: cw.windspeed ?? null,
-	  wind_speed_mph: kmhToMph(cw.windspeed),
+	    wind_speed_mph: kmhToMph(cw.windspeed) ?? null,
       wind_dir_deg: cw.winddirection ?? null,
       wind_dir_cardinal: cw.winddirection != null ? degToCard(cw.winddirection) : null,
       precipitation_mm: precip ?? null,
-	  visibility_m: vis ?? null,
+	    visibility_m: vis ?? null,
+      visibility: visibilityDescMetOffice(vis) ?? null,
+      light: light_level ?? null,
       weather_time: cw.time ?? null,
       fetchedAt: new Date(Date.now() + timeOffset).toISOString()
     };
@@ -394,20 +437,30 @@ async function fetchWeather(){
     errMsg.textContent = 'Unable to fetch weather — network or API error.';
   }
 }
-function displayWeather(){
-  if(!weather){
-    weatherDataEl.textContent = 'No weather';
-    return;
+async function updateWeatherTimeAgo() {
+  const el = document.getElementById('weatherTimeAgo');
+  if (!el) return;
+  const timeagores = timeAgo(el.dataset.weatherTime);
+  if (timeagores=="15 minutes ago") {
+    await fetchWeather();
   }
+  el.textContent = timeagores;
+}
+function formatWeather(w, separator = ' · ') {
+  if(!w) {return "No weather";}
   const lines = [
-    `Wind: ${weather.wind_speed_mph}mph (${weather.wind_dir_cardinal})`,
-    `Pp: ${weather.precipitation_mm}mm`,
-	  `Vis: ${visibilityDescMetOffice(vis)}`,
-    `@ ${weather.weather_time}`
+    `Wind: ${w.wind_speed_mph}mph (${w.wind_dir_cardinal})`,
+    `Pp: ${w.precipitation_mm}mm`,
+	  `Vis: ${w.visibility ?? visibilityDescMetOffice(w.visibility_m) ?? '—'}`,
+    `${w.light ?? '-'}` //`
   ];
   const wrappedLines = lines.map(part => `<span class="nobreak">${part}</span>`);
-  weatherDataEl.innerHTML = wrappedLines.join(' · ');
-  //weatherDataEl.innerHTML = lines.join(' · ') + ` <span class="nobreak">@ ${weather.weather_time}</span>`;
+  return wrappedLines.join(separator);
+}
+function displayWeather(){
+  weatherDataEl.innerHTML = formatWeather(weather);
+  weatherDataEl.innerHTML += ` · <span class="nobreak"><span id="weatherTimeAgo" data-weather-time="${weather.weather_time}"></span></span>`
+  updateWeatherTimeAgo();
 }
 function toggleCheckItem(el) {
   const index = parseInt(el.dataset.index, 10);
@@ -475,6 +528,187 @@ function updateStartButtonState() {
     startBtn.classList.add('disabled');
   }
 }
+function formatDateTime(iso) {
+    const d = new Date(iso);
+    const month = d.toLocaleString('en-GB', { month: 'short' });
+    const day   = d.getDate();
+    const time  = d.toLocaleTimeString('en-GB', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+    });
+    return `${month}-${day} ${time}`;
+}
+function formatDuration(sec) {
+    if (sec < 60) {return `${sec}s`;}
+    if (sec < 7200) { //under 2 hours = x mins
+        const m = Math.floor(sec / 60);
+        return `${m}m`;
+    }
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    return `${h}h ${m}m`;
+}
+function formatDateSpan(startIso, endIso) {
+    if (!startIso || !endIso) return '—';
+    const start = new Date(startIso);
+    const end   = new Date(endIso);
+    const durationSec = Math.ceil((end - start) / 1000);
+    const sameDay =
+        start.getFullYear() === end.getFullYear() &&
+        start.getMonth() === end.getMonth() &&
+        start.getDate() === end.getDate();
+    const datePart = start.toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+    });
+    const startTime = start.toLocaleTimeString('en-GB', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+    });
+    const endTime = end.toLocaleTimeString('en-GB', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+    });
+    if (sameDay) {
+        return `${datePart} ${startTime} - ${endTime} (${formatDuration(durationSec)})`;
+    }
+    const endDatePart = end.toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+    });
+    return `${datePart} ${startTime} - ${endDatePart} ${endTime} (${formatDuration(durationSec)})`;
+}
+
+function renderLogBook() {
+    flightHistory = JSON.parse(localStorage.getItem(historyLS)) //update
+    logBookEntries.innerHTML = '';
+    flightHistory.forEach((f, idx) => {
+        //const row = document.createElement('div');
+        const summary = document.createElement('div');
+        summary.className = 'flight-row';
+        summary.dataset.index = idx;
+        summary.innerHTML = `
+            <div>${formatDateTime(f.start_time)}</div>
+            <div>${f.location?.loc}</div>
+            <div>${f.drone}</div>
+            <div>${formatDuration(f.duration_seconds)}</div>
+            <div class="flight-delete" title="Delete" data-index="${idx}">×</div>`;//`
+
+        const details = document.createElement('div');
+        details.className = 'flight-details';
+        details.hidden = true;
+
+        // create summary and details containers
+        const fd = document.createElement('div');
+        fd.className = 'flight-summary';
+        fd.textContent = `${f.start_time} · ${f.pilot ?? '—'}`; // `
+
+        // append grid using DOM, no innerHTML
+        const grid = document.createElement('div');
+        grid.className = 'flight-details-grid';
+        // helper to add label + content
+        const addRow = (label, content, opts = {}) => {
+            const {
+                editable = false,
+                onSave = null,
+                type = 'text',
+                after = '',
+                textarea = false
+            } = opts;
+            const l = document.createElement('div');
+            l.innerHTML = `<strong>${label}</strong>`;
+            const c = document.createElement('div');
+            c.style.display = 'flex';
+            if (editable) {
+                const input = textarea
+                    ? document.createElement('textarea')
+                    : document.createElement('input');
+                if (!textarea) input.type = type;
+                input.value = content ?? '';
+                // prevent parent click from collapsing
+                input.addEventListener('click', e => e.stopPropagation());
+                input.addEventListener('blur', () => {
+                    if (!onSave) return;
+                    let val = input.value;
+                    if (type === 'number') {
+                        val = val === '' ? null : Number(val);
+                        if (Number.isNaN(val)) return;
+                    }
+                    onSave(val);
+                    localStorage.setItem(historyLS, JSON.stringify(flightHistory));
+                    console.log(`Saved ${label}`, val);
+                }, true);
+                c.appendChild(input);
+                if (after != '') {
+                  const a = document.createElement('div');
+                  a.innerHTML = after;
+                  c.appendChild(a);
+                }
+            } else {
+                c.innerHTML = content ?? '—';
+            }
+            grid.appendChild(l);
+            grid.appendChild(c);
+        };
+        addRow('Date:', formatDateSpan(f.start_time,f.end_time));
+        addRow('Location:',
+            flightHistory[idx].location?.loc,
+            {
+                editable: true,
+                onSave: v => flightHistory[idx].location.loc = v
+            }
+        );
+        addRow('Aircraft:', `${f.pilot ?? '—'} · ${f.drone ?? '—'} · ${f.controller ?? '—'}`);//`
+        addRow('Weather:', formatWeather(flightHistory[idx].weather));
+        addRow('Distance:',
+            f.distance,
+            {
+                editable: true,
+                type: 'number',
+                after: f.distanceUnits ?? distanceUnits,
+                onSave: v => flightHistory[idx].distance = v
+            }
+        );
+        addRow('Notes:',
+            f.note,
+            {
+                editable: true,
+                textarea: true,
+                onSave: v => flightHistory[idx].note = v
+            }
+        );
+
+        // attach grid to details
+        details.appendChild(grid);
+        // summary click toggles details
+        summary.addEventListener('click', e => {
+            if (e.target.closest('.flight-delete')) return; // preserve delete button
+            details.hidden = !details.hidden;
+        });
+        // click outside or on details closes it
+        details.addEventListener('click', e => {
+            details.hidden = true;
+        });
+        // append to container
+        logBookEntries.appendChild(summary);
+        logBookEntries.appendChild(details);
+
+    });
+    logBookEntries.querySelectorAll('.flight-delete').forEach(btn => {
+        btn.addEventListener('click', e => {
+            const i = Number(e.currentTarget.dataset.index);
+            flightHistory.splice(i, 1);
+            localStorage.setItem(historyLS, JSON.stringify(flightHistory)); //update history
+            renderLogBook();
+        });
+    });
+
+}
 
 async function startRun() {
   const capturedMs = Date.now();  //capture start time before sync
@@ -490,9 +724,11 @@ async function startRun() {
     await fetchWeather();
   }
   const startRec = {
+    version: logVersion,
     start_time: flightStartTime.toISOString(),
-    location: coords ? { lat: coords.lat, lon: coords.lon, accuracy_m: coords.accuracy } : null,
+    location: coords ? { lat: coords.lat, lon: coords.lon, accuracy_m: coords.accuracy, loc: locStatus.textContent } : null,
     weather,
+    distance_m: 0,
     note: ''
   };
   Object.keys(fields).forEach(key => {
@@ -511,41 +747,48 @@ async function startRun() {
   }
 }
 
-async function finishRun(){
+async function finishRun() {
+  const capturedMs = Date.now();  //capture start time before sync
+  flightActive = false;
+  updateActive();
+  await syncTime();
+  flightEndTime = new Date(capturedMs + timeOffset); //ensure start time is accurate now we are sync'd
+  updateStartButtonState();
   const stored = localStorage.getItem(keyLS);
   if(!stored){
     errMsg.textContent = 'No running session found in localStorage.';
     return;
   }
-  const startRec = JSON.parse(stored);
-  const endTime = new Date(Date.now() + timeOffset).toISOString();
-  const elapsed = (Date.now() - flightStartTime.getTime())/1000;
-  if(coords) await fetchWeather();
+  let record = JSON.parse(stored);
+  const startTime = new Date(record.start_time);
+  //const endTime = new Date(Date.now() + timeOffset).toISOString();
+  const elapsed = Math.round((flightEndTime - startTime)/1000);
+  if (coords) {await fetchWeather();}
   //Create the flight record:
-  const record = {
-    start: startRec,
-    end_time: endTime,
-    end_weather: weather || null,
-    duration_seconds: Math.round(elapsed), //startRec && startRec.start_time ? Math.round((Date.parse(endTime) - Date.parse(startRec.start_time))/1000) : null,
-    exported_at: new Date(Date.now() + timeOffset).toISOString()
-  };
-  // show JSON and prepare download
-  const jtxt = JSON.stringify(record, null, 2);
-  downloadLink.href = URL.createObjectURL(new Blob([jtxt], {type:'application/json'}));
-  downloadLink.download = `flight_${(new Date(Date.parse(record.start.start_time))).toISOString().replace(/[:.]/g,'-')}.json`;
-  archiveAndClearFlight(keyLS);
-  sessionInfo.textContent = `Finished at ${endTime} · Duration: ${elapsed} s`;
-  outCard.style.display = 'block';
-  jsonOut.textContent = jtxt;
+  record.end_time = flightEndTime;
+  record.duration_seconds = elapsed;
+  record.end_weather = weather
+  record.distanceUnits = distanceUnits;
+  localStorage.setItem(keyLS, JSON.stringify(record));
+  let history = [];
+  const histRaw = localStorage.getItem(historyLS);
+  if (histRaw) {
+      try {
+          const parsed = JSON.parse(histRaw);
+          if (Array.isArray(parsed)) {history = parsed;}
+      } catch {  // ignore malformed history
+      }
+  }
+  history.push(record);
+  localStorage.setItem(historyLS, JSON.stringify(history)); //save history
+  //Clear inflight record:
+  localStorage.removeItem(keyLS);
   //Clear pre-flight checklist:
   checklistState = Array(preFlightChecks.length).fill(false);
   checklistEl.querySelectorAll('.check-item').forEach(item => {
 	item.classList.remove('active');
 	item.textContent = item.textContent.replace(' ✅', '');
   });
-  updateStartButtonState();
-  flightActive = false;
-  updateActive();
   flightStartTime = null;
   errMsg.textContent = '';
 }
@@ -561,8 +804,10 @@ function updateActive() {
     outCard.style.display = 'none';
     jsonOut.textContent = '—';
     errMsg.textContent = '';
-    const elems = document.querySelectorAll('#inputCard select, #inputCard button');
-    elems.forEach(el => el.disabled = true);
+    const selects = document.querySelectorAll('#inputCard select');
+    selects.forEach(el => el.disabled = true);
+    const buttons = document.querySelectorAll('#inputCard button');
+    buttons.forEach(el => el.style.display = 'none');
   } else {
     startBtn.textContent = 'Start';
     startBtn.classList.remove('finish');
@@ -570,8 +815,10 @@ function updateActive() {
     startBtn.disabled = true;
     preFlightBtn.style.display = 'block';
     runTimerEl.style.display = 'none';
-    const elems = document.querySelectorAll('#inputCard select, #inputCard button');
-    elems.forEach(el => el.disabled = false);
+    const selects = document.querySelectorAll('#inputCard select');
+    selects.forEach(el => el.disabled = false);
+    const buttons = document.querySelectorAll('#inputCard button:not(.add-variant)');
+    buttons.forEach(el => el.style.display = 'flex');
   }
 }
 
@@ -642,7 +889,7 @@ function buildInputCard(containerId, defs) {
       const val = customInput.value.trim();
       if (val && !fields[key].includes(val)) {
           fields[key].push(val);
-          localStorage.setItem('flightFields', JSON.stringify(fields));
+          localStorage.setItem(keyFields, JSON.stringify(fields));
           const newO = document.createElement('option');
           newO.textContent = newO.value = val;
           sel.insertBefore(newO, customOpt);
@@ -670,7 +917,7 @@ function buildInputCard(containerId, defs) {
         // Don't delete the "Add Custom" trigger or empty selections
         if (!val || val === "CUSTOM_TRIGGER") return;
         fields[key] = fields[key].filter(item => item !== val);
-        localStorage.setItem('flightFields', JSON.stringify(fields));
+        localStorage.setItem(keyFields, JSON.stringify(fields));
         sel.remove(sel.selectedIndex);
         if (fields[key].length === 0) {
             sel.value = "CUSTOM_TRIGGER";
@@ -685,6 +932,14 @@ function buildInputCard(containerId, defs) {
     container.appendChild(row);
   });
 }
+function downloadLogBook() {
+  //<a id="downloadLink" class="link-btn" download="flight_record.json" href="#">Download JSON</a>
+  
+}
+
+//// Start
+document.getElementById('progversion').textContent = progVersion;
+document.getElementById('logversion').textContent = logVersion;
 
 const map = L.map('map').fitWorld();
 const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -698,7 +953,7 @@ map.on('locationerror', onLocationError);
 buildChecks();
 buildInputCard('inputCard', fields);
 
-preFlightBtn.addEventListener('click', () => modal.style.display = 'block');
+preFlightBtn.addEventListener('click', () => modal.style.display = 'flex');
 modalClose.addEventListener('click', () => modal.style.display = 'none');
 modalCloseBtn.addEventListener('click', () => modal.style.display = 'none');
 window.addEventListener('click', e => { if(e.target === modal) modal.style.display='none'; });
@@ -711,6 +966,10 @@ startBtn.addEventListener('click', async () => {
   await startRun();
 });
 
+if (flightHistory!={}) {  //only show button is there is history
+  logBookBtn.style.display = 'block';
+}
+
 // Clear output
 clearBtn.addEventListener('click', () => {
   jsonOut.textContent = '—';
@@ -718,14 +977,27 @@ clearBtn.addEventListener('click', () => {
   downloadLink.href = '#';
 });
 logBookBtn.addEventListener('click', () => {
-  logBook.style.display = 'block';
+  logBook.style.display = 'flex';
+  console.log(flightHistory);
+  renderLogBook();
+});
+logBookDlBtn.addEventListener('click', () => {
+  downloadLogBook()
 });
 logBookCloseBtn.addEventListener('click', () => {
   logBook.style.display = 'none';
 });
+infoBtn.addEventListener('click', () => {
+  info.style.display = 'flex';
+});
+infoCloseBtn.addEventListener('click', () => {
+  info.style.display = 'none';
+});
 
 // On load: attempt time sync, start clock, request location
 (async function init() { // Try time sync but do not block UI
+  const defaults = JSON.parse(localStorage.getItem(keyDefaults)) || {};
+  distanceUnits = defaults.distanceUnits || distanceUnits;
   // If previous start exists, reflect state
   const prev = localStorage.getItem(keyLS);
   if(prev) {
