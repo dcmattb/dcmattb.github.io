@@ -78,54 +78,6 @@ h2 {
 }
 .muted{color:var(--muted); font-size:0.88rem;}
 
-  button {cursor: pointer;}
-  .custom-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 34px;
-    padding: 0 10px;
-    background-color: transparent;
-    color: var(--failure);
-    border: 1px solid var(--failure);
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.1s ease;
-  }
-  .custom-button:active {
-      transform: scale(0.9);
-  }
-  .add-variant {
-      color: var(--success);
-      border-color: var(--success);
-  }
-  .row {
-    display: grid;
-    gap: 0 10px;
-    grid-template-columns: 1fr 2fr 30px;
-    align-items: center;
-  }
-  select, label, input {
-    color: var(--text);
-    background: var(--bg);
-  }
-  label {
-    display:block;
-    font-weight: 600;
-    font-size:0.85rem;
-  }
-  select, input[type="text"]{
-    width:100%;
-    border:1px solid rgba(255,255,255,0.04);
-    font-size:0.98rem;
-    box-sizing:border-box;
-    border-radius: 5px;
-    text-align: right;
-    justify-self: end;
-  }
-
-
 .big-btn{
   display:block;
   width:100%;
@@ -162,6 +114,133 @@ h2 {
 #logBook {
   display: none;
 }
+  button {cursor: pointer;}
+  .custom-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 34px;
+    padding: 0 10px;
+    background-color: transparent;
+    color: var(--failure);
+    border: 1px solid var(--failure);
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.1s ease;
+  }
+  .custom-button:active {
+      transform: scale(0.9);
+  }
+  .add-variant {
+      color: var(--success);
+      border-color: var(--success);
+  }
+  .row {
+    display: grid;
+    gap: 0 10px;
+    grid-template-columns: 1fr 2fr 30px;
+    align-items: center;
+  }
+  select, input {
+    color: var(--text);
+    background: var(--bg);
+    width:100%;
+    border:1px solid rgba(255,255,255,0.04);
+    background: color-mix(in srgb, var(--bg) 75%, transparent);
+    border-radius: 5px;
+    box-sizing:border-box;
+  }
+  label {
+    display:block;
+    font-weight: 600;
+    font-size:0.85rem;
+  }
+  .row select, .row input {
+    font-size:0.98rem;
+    text-align: right;
+    justify-self: end;
+  }
+  textarea {
+      width: 100%;
+      min-height: 5em;
+      resize: vertical;
+      color: var(--text);
+      background: color-mix(in srgb, var(--bg) 75%, transparent);
+      box-sizing: border-box;
+      border: 1px solid rgba(255,255,255,0.04);
+      border-radius: 5px;
+  }
+
+.flight-grid {
+    cursor: pointer;
+    margin: 0.5rem 0 1rem 0;
+    display: grid;
+    width: 100%;
+    grid-template-columns:
+        minmax(80px, auto)   /* date */
+        1fr                  /* location */
+        minmax(50px, auto)   /* pilot */
+        minmax(25px, auto)   /* duration */
+        16px;                /* delete */
+    column-gap: 0.5rem;
+    row-gap: 0.15rem;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    max-height: 80vh;
+    overflow: scroll
+}
+.flight-row {
+    display: contents;
+}
+.flight-row > div {
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-top: 0.2rem;
+}
+/* first two columns: left-aligned */
+.flight-row > div:nth-child(1), .flight-row > div:nth-child(2) {
+    text-align: left;
+}
+.flight-delete {
+    text-align: centre;
+    cursor: pointer;
+    font-weight: bold;
+    opacity: 0.6;
+}
+.flight-delete:hover {
+    opacity: 1;
+}
+.flight-details {
+    cursor: pointer;
+    grid-column: 1 / -1;
+    padding: 0.0rem 0.5rem 0.8rem;
+    font-size: 0.8rem;
+    line-height: 1.25;
+    background: var(--accent);
+    border-radius: 0 0 8px 8px;
+    margin-bottom: 0.8em;
+}
+.flight-details input[type=number] {
+  width: 5rem;
+}
+.flight-details-grid {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    column-gap: 0.6rem;
+    /*row-gap: 0.25rem;*/
+}
+
+.flight-details-grid > div:nth-child(odd) {
+    text-align: right;
+    opacity: 0.7;
+    white-space: nowrap;
+    align-content: center;
+}
+
+
   .status{font-size:0.9rem; margin-top:8px;}
   pre.json{
     background:#021024;
@@ -230,7 +309,7 @@ h2 {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 9999;
+    z-index: 1999;
   }
 
   .modal-content {
@@ -238,6 +317,7 @@ h2 {
     color: var(--text);
     border-radius: 8px;
     padding: 1rem;
+    margin: 1rem;
     position: relative;
     box-shadow: 0 6px 18px rgba(0,0,0,0.6);
   }
